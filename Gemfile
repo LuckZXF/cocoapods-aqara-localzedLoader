@@ -12,7 +12,7 @@ group :development do
   gem 'prettybacon'
   gem 'colored2'
   gem 'fileutils'
-  gem 'zip'
+  gem 'rubyzip'
   gem 'httparty'
   gem 'rubyXL'
 end

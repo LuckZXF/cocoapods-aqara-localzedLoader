@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.version       = Localzedloader::VERSION
   spec.authors       = ['zhaoxifan']
   spec.email         = ['179988305@qq.com']
-  spec.description   = %q{A short description of cocoapods-aqara-localzedLoader.}
-  spec.summary       = %q{A longer description of cocoapods-aqara-localzedLoader.}
-  spec.homepage      = 'https://github.com/EXAMPLE/cocoapods-aqara-localzedLoader'
+  spec.description   = %q{Aqara 多语言插件}
+  spec.summary       = %q{Aqara 多语言从云端多语言平台下载并处理解析成Xcode需要的多语言文件}
+  spec.homepage      = 'https://github.com/LuckZXF/cocoapods-aqara-localzedLoader'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files`.split($/)
@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'claide', '>= 1.0.2', '< 2.0'
   spec.add_runtime_dependency 'colored2'
   spec.add_runtime_dependency 'fileutils'
-  spec.add_runtime_dependency 'zip'
+  spec.add_runtime_dependency 'rubyzip'
   spec.add_runtime_dependency 'httparty'
   spec.add_runtime_dependency 'rubyXL'
 end

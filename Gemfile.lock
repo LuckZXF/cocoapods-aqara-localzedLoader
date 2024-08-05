@@ -7,7 +7,7 @@ PATH
       fileutils
       httparty
       rubyXL
-      zip
+      rubyzip
 
 GEM
   remote: https://rubygems.org/
@@ -153,7 +153,6 @@ GEM
       nanaimo (~> 0.3.0)
       rexml (~> 3.2.4)
     zeitwerk (2.6.6)
-    zip (2.0.2)
 
 PLATFORMS
   arm64-darwin-21
@@ -173,7 +172,7 @@ DEPENDENCIES
   rake (>= 10.0)
   rspec (>= 3.0)
   rubyXL
-  zip
+  rubyzip
 
 BUNDLED WITH
    2.3.26

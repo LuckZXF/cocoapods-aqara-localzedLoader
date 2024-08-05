@@ -1,3 +1,4 @@
+require_relative '../ios_bundle_generate'
 module Pod
   class Command
     # This is an example of a cocoapods plugin adding a top-level subcommand
@@ -17,27 +18,34 @@ module Pod
     # @todo Create a PR to add your plugin to CocoaPods/cocoapods.org
     #       in the `plugins.json` file, once your plugin is released.
     #
-    class Localzedloader < Command
-      self.summary = 'Short description of cocoapods-aqara-localzedLoader.'
+    class Download < Command
+      self.summary = 'langDownnloader for user'
 
       self.description = <<-DESC
-        Longer description of cocoapods-aqara-localzedLoader.
+        help user downnloade language resource
       DESC
 
-      self.arguments = 'NAME'
+      self.arguments = []
 
       def initialize(argv)
-        @name = argv.shift_argument
         super
-      end
+        # puts "初始化:#{argv}"
+        project_directory = argv.option('project-directory')
+        puts project_directory
+        project_directory = Dir.pwd if project_directory.nil?
+        puts project_directory
+        @project_directory = Pathname.new(project_directory).expand_path
+        puts project_directory
 
-      def validate!
-        super
-        help! 'A Pod name is required.' unless @name
       end
-
+      def self.options
+        [
+          ['--project-directory=/project/dir/', 'The path to the root of the project directory']
+        ].concat(super)
+      end
       def run
-        UI.puts "Add your implementation for the cocoapods-aqara-localzedLoader plugin in #{__FILE__}"
+        UI.puts "项目路径 #{@project_directory}"
+        BundleGenerater.generate(@project_directory)
       end
     end
   end
