@@ -10,4 +10,9 @@ group :development do
   gem 'bacon'
   gem 'mocha-on-bacon'
   gem 'prettybacon'
+  gem 'colored2'
+  gem 'fileutils'
+  gem 'zip'
+  gem 'httparty'
+  gem 'rubyXL'
 end

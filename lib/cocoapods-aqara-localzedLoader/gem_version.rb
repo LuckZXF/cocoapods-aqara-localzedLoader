@@ -1,3 +1,3 @@
-module CocoapodsAqaraLocalzedloader
+module Localzedloader
   VERSION = "0.0.1"
 end
