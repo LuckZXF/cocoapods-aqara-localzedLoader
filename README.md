@@ -1,0 +1,1 @@
+# cocoapods-aqara-localzedLoader
