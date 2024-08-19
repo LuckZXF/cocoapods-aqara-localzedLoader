@@ -49,8 +49,8 @@ def MakeHeader(headerText):
 
 def DownLatestLocalizableSource(downloadPath):
     iam_service = IamService()
-    ak123 = 'AKLTZTFjNzFjYTczMzJjNGQyMjg0NTRkZjQ2ZTA4MTE1Mjc'
-    sk = 'TkdRMU9HSTJZemt6Tmpkak5ERXhaVGt5WXpVNU5qSmxPVFkzWWpBM1pqRQ=='
+    ak123 = 'AKLTMjQ5NzU0YWY0ODU1NGVjOGIwMmVlYzk3ZGVhMjgzZmM'
+    sk = 'TkRZeE9UazRNVEl4TW1JNU5HSTRZV0U0TUdRNU1HTmxNMk5pWVRJMU1EYw=='
     iam_service.set_ak(ak123)
     iam_service.set_sk(sk)
 
