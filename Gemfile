@@ -15,4 +15,5 @@ group :development do
   gem 'rubyzip'
   gem 'httparty'
   gem 'rubyXL'
+  gem 'Open3'
 end

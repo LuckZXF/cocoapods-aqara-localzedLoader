@@ -2,6 +2,7 @@
 require_relative './LanguageDownloader'
 require_relative  './File_util'
 require 'fileutils'
+require 'open3'
 # require 'colored2'
 class BundleGenerater
 
@@ -9,7 +10,9 @@ class BundleGenerater
   INFO_PLIST_MAP = {:common_app_name=>["CFBundleDisplayName"],other_perm_camera_permission_description:["NSCameraUsageDescription"],other_perm_location_permission_description:["NSLocationAlwaysAndWhenInUseUsageDescription","NSLocationWhenInUseUsageDescription","NSLocationAlwaysUsageDescription"],other_perm_bluetooth_permission_description:["NSBluetoothPeripheralUsageDescription","NSBluetoothAlwaysUsageDescription"],access_content_permssion_storage:["NSPhotoLibraryUsageDescription"],other_perm_mic_permission_description:["NSMicrophoneUsageDescription"],other_set_permissions_homedata_desc:["NSHomeKitUsageDescription"],other_set_permissions_asr_text:["NSSpeechRecognitionUsageDescription"],device_add_device:["Add_Device_Title"],automation_add:["Add_Automation_Title"],device_create_scene:["Add_Scene_Title"]}
   def self.generate(project_path)
     # 下载excel
-    system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
+    puts "开始下载多语言文件...".green
+    Open3.capture3("cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}")
+    # system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
     f_path = "#{project_path}/download.xlsx"
     print(f_path)
 

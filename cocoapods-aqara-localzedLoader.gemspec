@@ -29,4 +29,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'rubyzip'
   spec.add_runtime_dependency 'httparty'
   spec.add_runtime_dependency 'rubyXL'
+  spec.add_runtime_dependency 'open3'
 end
