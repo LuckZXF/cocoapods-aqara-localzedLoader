@@ -139,6 +139,7 @@ class BundleGenerater
   #对多语言的value进行处理
   def self.handleValue(value='',stringElement = nil)
     #替换{=}
+    value = self.replace_placeholders value
     value = value.gsub(/{#}/,"%@")
     value = value.gsub(/""/,'"')
     value = value.gsub(/\\"/,'"')
@@ -152,6 +153,10 @@ class BundleGenerater
       value = value.chop
     end
     value
+  end
+
+  def self.replace_placeholders(str='')
+    return str.gsub(/%(\d+)\$s/, '%\1$@')
   end
 
 end
