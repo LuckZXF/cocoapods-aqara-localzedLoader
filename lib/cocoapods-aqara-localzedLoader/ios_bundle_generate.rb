@@ -8,13 +8,32 @@ class BundleGenerater
 
   # INFO_PLIST_ARRAY = [NSAppleMusicUsageDescription","NSLocalNetworkUsageDescription"]
   INFO_PLIST_MAP = {:common_app_name=>["CFBundleDisplayName"],other_perm_camera_permission_description:["NSCameraUsageDescription"],other_perm_location_permission_description:["NSLocationAlwaysAndWhenInUseUsageDescription","NSLocationWhenInUseUsageDescription","NSLocationAlwaysUsageDescription"],other_perm_bluetooth_permission_description:["NSBluetoothPeripheralUsageDescription","NSBluetoothAlwaysUsageDescription"],access_content_permssion_storage:["NSPhotoLibraryUsageDescription"],other_perm_mic_permission_description:["NSMicrophoneUsageDescription"],other_set_permissions_homedata_desc:["NSHomeKitUsageDescription"],other_set_permissions_asr_text:["NSSpeechRecognitionUsageDescription"],device_add_device:["Add_Device_Title"],automation_add:["Add_Automation_Title"],device_create_scene:["Add_Scene_Title"]}
+
+  #定义类变量记录下载次数
+
+  @@download_Count = 1
+
+  def self.downloadxls(project_path)
+    if @@download_Count > 1
+      sleep 10
+    end
+    puts "当前进行第#{@@download_Count}次尝试下载多语言文件"
+    Open3.capture3("cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}")
+    #system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
+    @@download_Count = @@download_Count + 1
+  end
+
   def self.generate(project_path)
     # 下载excel
     puts "开始下载多语言文件...".green
-    Open3.capture3("cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}")
-    # system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
+
+
     f_path = "#{project_path}/download.xlsx"
-    print(f_path)
+    printf(f_path)
+
+    until File.exist?(f_path)
+      self.downloadxls(project_path)
+    end
 
     # 读取excel到内存
     file_til = File_util.new

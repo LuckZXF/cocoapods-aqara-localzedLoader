@@ -48,6 +48,7 @@ def MakeHeader(headerText):
     return s
 
 def DownLatestLocalizableSource(downloadPath):
+    print("开始发送下载请求...")
     iam_service = IamService()
     ak123 = 'AKLTMjQ5NzU0YWY0ODU1NGVjOGIwMmVlYzk3ZGVhMjgzZmM'
     sk = 'TkRZeE9UazRNVEl4TW1JNU5HSTRZV0U0TUdRNU1HTmxNMk5pWVRJMU1EYw=='
@@ -77,6 +78,7 @@ def DownLatestLocalizableSource(downloadPath):
             code.write(resp.content)
             code.close()
     else:
+        print(resp.text)
         raise Exception(resp.text)
 
 
