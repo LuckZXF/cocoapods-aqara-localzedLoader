@@ -7,7 +7,45 @@ require 'open3'
 class BundleGenerater
 
   # INFO_PLIST_ARRAY = [NSAppleMusicUsageDescription","NSLocalNetworkUsageDescription"]
-  INFO_PLIST_MAP = {:common_app_name=>["CFBundleDisplayName"],other_perm_camera_permission_description:["NSCameraUsageDescription"],other_perm_location_permission_description:["NSLocationAlwaysAndWhenInUseUsageDescription","NSLocationWhenInUseUsageDescription","NSLocationAlwaysUsageDescription"],other_perm_bluetooth_permission_description:["NSBluetoothPeripheralUsageDescription","NSBluetoothAlwaysUsageDescription"],access_content_permssion_storage:["NSPhotoLibraryUsageDescription"],other_perm_mic_permission_description:["NSMicrophoneUsageDescription"],other_set_permissions_homedata_desc:["NSHomeKitUsageDescription"],other_set_permissions_asr_text:["NSSpeechRecognitionUsageDescription"],device_add_device:["Add_Device_Title"],automation_add:["Add_Automation_Title"],device_create_scene:["Add_Scene_Title"]}
+  INFO_PLIST_MAP = {
+    common_app_name: ["CFBundleDisplayName"],
+    other_perm_camera_permission_description: [
+      "NSCameraUsageDescription"
+    ],
+    other_perm_location_permission_description: [
+      "NSLocationAlwaysAndWhenInUseUsageDescription",
+      "NSLocationWhenInUseUsageDescription",
+      "NSLocationAlwaysUsageDescription"
+    ],
+    other_perm_bluetooth_permission_description: [
+      "NSBluetoothPeripheralUsageDescription",
+      "NSBluetoothAlwaysUsageDescription"
+    ],
+    access_content_permssion_storage: [
+      "NSPhotoLibraryUsageDescription"
+    ],
+    other_perm_mic_permission_description: [
+      "NSMicrophoneUsageDescription"
+    ],
+    other_set_permissions_homedata_desc: [
+      "NSHomeKitUsageDescription"
+    ],
+    other_set_permissions_asr_text: [
+      "NSSpeechRecognitionUsageDescription"
+    ],
+    device_add_device: [
+      "Add_Device_Title"
+    ],
+    automation_add: [
+      "Add_Automation_Title"
+    ],
+    device_create_scene: [
+      "Add_Scene_Title"
+    ],
+    NFCReaderUsageDescription: [
+      "NFCReaderUsageDescription"
+    ]
+  }
 
   #定义类变量记录下载次数
 
