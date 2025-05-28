@@ -78,7 +78,6 @@ class BundleGenerater
     until File.exist?(f_path)
       self.downloadxls(project_path)
     end
-
     # 读取excel到内存
     file_til = File_util.new
     hash = file_til.read_excel f_path
@@ -99,18 +98,26 @@ class BundleGenerater
 
     end
 
+    errors = []
     #生成资源文件
     hash.each do |key, stringElement|
-      num = 0
+      expected_count = nil
       stringElement.langHash.each do |lang, value|
         # puts "#{lang}:#{value}"
         next if lang.downcase === "selfkey" or value === nil or value === " " or value === ""
         value = self.handleValue value,stringElement
-        value.scan(/%@/) do |match|
-          num = match.size  if num == 0
-          if num != match.size
-            puts "key:#{key}中%@ 数量不一致,请检查".red
-          end
+        current_count = value.scan(/%@/).size
+
+        if expected_count.nil?
+          expected_count = current_count
+        elsif current_count != expected_count
+          errors << {
+            key: key,
+            lang: lang,
+            expected: expected_count,
+            actual: current_count
+          }
+          next
         end
         str = %Q|"#{key}" = "#{value}";\n|
         localized_file = "./#{lang}.lproj/Localizable.strings"
@@ -142,6 +149,17 @@ class BundleGenerater
         end
 
       end
+    end
+
+    #判读是否有多语言出现不同语种%@数量不匹配,出现后中断打包
+    if errors.any?
+      puts "以下 key 的 %@ 在不同语种的数量存在不一致，让产品交互速度改后再打包：\n".red
+      errors.each do |err|
+        puts "key: #{err[:key]} | 语言: #{err[:lang]} | 实际: #{err[:actual]} | 应为: #{err[:expected]}".red
+      end
+      exit(1)
+    else
+      puts "✅ 所有 key 的 %@ 在不同语种保持数量一致".green
     end
 
     #验证导出的多语言包格式是否正确
