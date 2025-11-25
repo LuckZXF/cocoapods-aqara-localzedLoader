@@ -1,5 +1,6 @@
 import shutil
 import os, sys, stat
+import time
 import requests
 # import zipfile
 
@@ -40,7 +41,22 @@ timestamp: 1690280776221
 user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36
 '''
 
+def get_ak_sk():
+    """从环境变量读取 AK/SK，未配置时回退到本地默认值。"""
+    ak_env = os.getenv("VOLC_ACCESSKEY") or os.getenv("VOLCENGINE_ACCESS_KEY")
+    sk_env = os.getenv("VOLC_SECRETKEY") or os.getenv("VOLCENGINE_SECRET_KEY")
 
+    # 兼容现有脚本中写死的 AK/SK（建议在外部通过环境变量配置）
+    default_ak = 'AKLTMjQ5NzU0YWY0ODU1NGVjOGIwMmVlYzk3ZGVhMjgzZmM'
+    default_sk = 'TkRZeE9UazRNVEl4TW1JNU5HSTRZV0U0TUdRNU1HTmxNMk5pWVRJMU1EYw=='
+
+    ak = ak_env or default_ak
+    sk = sk_env or default_sk
+
+    if not ak or not sk:
+        raise RuntimeError("未找到火山引擎 AK/SK，请配置 VOLC_ACCESSKEY / VOLC_SECRETKEY 环境变量")
+
+    return ak, sk
 
 def MakeHeader(headerText):
     s = headerText.strip().split('\n')
@@ -49,37 +65,77 @@ def MakeHeader(headerText):
 
 def DownLatestLocalizableSource(downloadPath):
     print("开始发送下载请求...")
+
+    # 确保下载目录存在
+    if not os.path.isdir(downloadPath):
+        os.makedirs(downloadPath, exist_ok=True)
+
+    # 加载 AK/SK
+    ak123, sk = get_ak_sk()
+
     iam_service = IamService()
-    ak123 = 'AKLTMjQ5NzU0YWY0ODU1NGVjOGIwMmVlYzk3ZGVhMjgzZmM'
-    sk = 'TkRZeE9UazRNVEl4TW1JNU5HSTRZV0U0TUdRNU1HTmxNMk5pWVRJMU1EYw=='
     iam_service.set_ak(ak123)
     iam_service.set_sk(sk)
 
-    api_info = ApiInfo("GET", "/", {"serviceName": "i18n_openapi", "Action": "ProjectNamespaceTextDownload",
-                                    "Version": "2021-05-21"}, {}, {})
-    service_info = ServiceInfo("iam.volcengineapi.com", {'Accept': 'application/json'},
-                               Credentials(ak123,sk, 'i18n_openapi', 'cn-north-1'),20,20)
+    # 使用 OpenAPI 网关域名，结合 serviceName = i18n_openapi
+    # 参考 Node SDK 的 OpenAPI 用法，统一走 open.volcengineapi.com
+    connection_timeout = 10      # 建连超时
+    socket_timeout = 300         # 读取超时（导出大项目时可能比较慢）
+
+    service_info = ServiceInfo(
+        "open.volcengineapi.com",
+        {'Accept': 'application/json'},
+        Credentials(ak123, sk, 'i18n_openapi', 'cn-north-1'),
+        connection_timeout,
+        socket_timeout
+    )
     iam_service.service_info = service_info
 
-    params = {'async': 0, 'projectId': 5788, 'namespaceId': 42835, 'format': 'xlsx'}
+    # OpenAPI 的 Action / Version / serviceName 与文档保持一致
+    api_info = ApiInfo(
+        "GET",
+        "/",
+        {"serviceName": "i18n_openapi", "Action": "ProjectNamespaceTextDownload", "Version": "2021-05-21"},
+        {},
+        {}
+    )
 
+    params = {
+        'async': 0,           # 同步导出；如仍然超时，可改为 1 走异步任务
+        'projectId': 5788,
+        'namespaceId': 42835,
+        'format': 'xlsx',
+    }
+
+    # 生成并签名请求
     r = iam_service.prepare_request(api_info, params, 0)
     SignerV4.sign(r, service_info.credentials)
     url = r.build(0)
-    # print(r.headers)
-    # res = iam_service.projectNamespaceTextDownload(params)
 
-    resp = iam_service.session.get(url, headers=r.headers,
-                            timeout=(service_info.connection_timeout,service_info.socket_timeout))
-    if resp.status_code == 200:
-        print('下载exccel成功')
-        with open(downloadPath+"/download.xlsx", "wb") as code:
-            # 将 response 保存成本地文件
-            code.write(resp.content)
-            code.close()
-    else:
-        print(resp.text)
-        raise Exception(resp.text)
+    # 使用流式下载 + 调大的超时，避免大文件导出导致总是超时
+    resp = iam_service.session.get(
+        url,
+        headers=r.headers,
+        timeout=(service_info.connection_timeout, service_info.socket_timeout),
+        stream=True,
+    )
+
+    if resp.status_code != 200:
+        # 打印部分响应文本，方便排查权限 / 参数问题
+        print('下载失败，HTTP 状态码:', resp.status_code)
+        try:
+            print('响应内容预览:', resp.text[:1000])
+        except Exception:
+            pass
+        raise Exception(f"下载失败，状态码 {resp.status_code}")
+
+    out_file = os.path.join(downloadPath, "download.xlsx")
+    with open(out_file, "wb") as code:
+        for chunk in resp.iter_content(chunk_size=1024 * 128):
+            if chunk:
+                code.write(chunk)
+
+    print('下载 excel 成功:', out_file)
 
 
 

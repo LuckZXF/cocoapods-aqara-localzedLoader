@@ -51,7 +51,7 @@ class BundleGenerater
 
   @@download_Count = 1
 
-  def self.downloadxls(project_path)
+  def self.downloadxls(project_path, crowdin=false)
     if @@download_Count > 10
       puts "当前无网络，程序即将退出。"
       exit(1)
@@ -63,7 +63,11 @@ class BundleGenerater
       sleep sleep_time
     end
     puts "当前进行第#{@@download_Count}次尝试下载多语言文件"
-    system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
+    if crowdin
+      system "crowdin download sources"
+    else
+      system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
+    end
     @@download_Count = @@download_Count + 1
   end
 
@@ -71,18 +75,28 @@ class BundleGenerater
     # 下载excel
     puts "开始下载多语言文件...".green
 
+    crowdin = true if File.exist? "#{project_path}/crowdin.yml"
 
     f_path = "#{project_path}/download.xlsx"
-    printf(f_path)
+    if crowdin
+      f_path = "#{project_path}/APP/Aqara_Home_App.xlsx"
+    end
+
+    puts f_path
 
     until File.exist?(f_path)
-      self.downloadxls(project_path)
+      self.downloadxls(project_path, crowdin)
     end
     # 读取excel到内存
     file_til = File_util.new
-    hash = file_til.read_excel f_path
+    hash = file_til.read_excel(f_path, crowdin)
     if File.exist? f_path
-      FileUtils.rm_rf f_path
+      if crowdin
+        parent_dir = File.dirname(f_path)
+        FileUtils.rm_rf(parent_dir)
+      else
+        FileUtils.rm_rf f_path
+      end
     end
     puts "一共有 #{hash.keys.size} 条文案".green
 
@@ -209,7 +223,7 @@ class BundleGenerater
         FileUtils.mkdir_p dest
         FileUtils.mv("#{info_plist_file}",dest,force:true)
       end
-      FileUtils.rm_rf (File.dirname(path))
+      # FileUtils.rm_rf (File.dirname(path))
     end
     puts "多语言拷贝到目录:#{bundPath}"
     if copy_info_plist

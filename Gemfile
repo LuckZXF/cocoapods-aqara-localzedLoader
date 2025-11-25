@@ -16,4 +16,5 @@ group :development do
   gem 'httparty'
   gem 'rubyXL'
   gem 'open3'
+  gem 'ruby-lsp'
 end
