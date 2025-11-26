@@ -229,7 +229,9 @@ class BundleGenerater
     if copy_info_plist
       puts "InfoPlist多语言拷贝到目录:#{info_plist_path}"
     end
-
+    if crowdin
+      system("crowdin upload --config #{project_path}/AqaraHome/Common/crowdin.yml --branch iOS_Localizable")
+    end
   end
   #对多语言的value进行处理
   def self.handleValue(value='',stringElement = nil)
