@@ -18,18 +18,18 @@ class File_util
       workbook = RubyXL::Parser.parse filename
       worksheet = workbook[0]
 
-      if crowdin
-        last_col_index = worksheet[0].cells.size # 当前最后一列索引+1
-
-        # 遍历 B 列（索引 1）所有行
-        worksheet.each_with_index do |row, row_index|
-          b_value = row && row[1] ? row[1].value : nil
-          worksheet.add_cell(row_index, last_col_index, b_value)
-        end
-
-        worksheet[0].cells[last_col_index] = worksheet.add_cell(0, last_col_index, 'zh-CN')
-        workbook.write(filename)
-      end
+      # if crowdin
+      #   last_col_index = worksheet[0].cells.size # 当前最后一列索引+1
+      #
+      #   # 遍历 B 列（索引 1）所有行
+      #   worksheet.each_with_index do |row, row_index|
+      #     b_value = row && row[1] ? row[1].value : nil
+      #     worksheet.add_cell(row_index, last_col_index, b_value)
+      #   end
+      #
+      #   worksheet[0].cells[last_col_index] = worksheet.add_cell(0, last_col_index, 'zh-CN')
+      #   workbook.write(filename)
+      # end
 
       row1 = worksheet[0]
       @key_hash = getkeyHash(row1)
