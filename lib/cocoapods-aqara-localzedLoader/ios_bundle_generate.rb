@@ -237,6 +237,7 @@ class BundleGenerater
   def self.handleValue(value='',stringElement = nil)
     #替换{=}
     value = self.replace_placeholders value
+    value = value.gsub('%s', '%@')
     value = value.gsub(/{#}/,"%@")
     value = value.gsub(/""/,'"')
     value = value.gsub(/\\"/,'"')
