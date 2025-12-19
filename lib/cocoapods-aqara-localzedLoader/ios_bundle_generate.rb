@@ -79,7 +79,7 @@ class BundleGenerater
 
     f_path = "#{project_path}/download.xlsx"
     if crowdin
-      f_path = "#{project_path}/APP/Aqara_Home_App.xlsx"
+      f_path = "#{project_path}/APP/APP.xlsx"
     end
 
     puts f_path
