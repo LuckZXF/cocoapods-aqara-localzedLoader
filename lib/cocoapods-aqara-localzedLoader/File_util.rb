@@ -49,7 +49,7 @@ class File_util
         self_key = ''
         # 设置StringElement的值
         row.cells.each_with_index do |cell, i|
-          next unless cell.value
+          next unless cell&.value
           case i
           when 0
             self_key = cell.value
