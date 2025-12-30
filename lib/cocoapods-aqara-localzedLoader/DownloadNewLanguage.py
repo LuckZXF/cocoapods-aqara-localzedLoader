@@ -2,9 +2,10 @@ import shutil
 import os, sys, stat
 import time
 import requests
-# import zipfile
+from typing import Optional
 
-# from __future__ import print_function
+
+#########  火山多语言  #############
 
 from volcengine.iam.IamService import IamService
 
@@ -138,23 +139,182 @@ def DownLatestLocalizableSource(downloadPath):
     print('下载 excel 成功:', out_file)
 
 
-
-# def Unzip():
-#     f = zipfile.ZipFile("./localizable.zip", 'r')  # 压缩文件位置
-#     for file in f.namelist():
-#         f.extract(file, "../")  # 解压位置
-#     f.close()
-#     os.remove('./localizable.zip')
-
 def UpdateSource_language():
     DownLatestLocalizableSource()
     return './download.xlsx'
 
-    # Unzip()
-    # os.rename('./download.xlsx', '../hit_all_str.xlsx')
-#     shutil.copy('./download.xlsx', '../source_language/hit_all_str.xlsx')
-#     os.remove('./download.xlsx')
+
+#######################################
+
+#####  Crowdin  #########
+
+class CrowdinPlatform():
+    """Crowdin 翻译平台"""
+
+    def __init__(self, access_token: str, project_id: str, base_url: str = "https://aqara.crowdin.com/api/v2"):
+        """初始化 Crowdin 平台
+
+        Args:
+            access_token: 访问令牌
+            project_id: 项目 ID
+            base_url: API 基础 URL
+        """
+        self.access_token = access_token
+        self.project_id = project_id
+        self.base_url = base_url
+
+    def _get_headers(self) -> dict:
+        """获取 API 请求头"""
+        return {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+
+    def _get_project_files(self) -> dict:
+        """获取项目文件列表
+
+        Returns:
+            dict: API 返回的文件列表数据
+        """
+        url = f"{self.base_url}/projects/{self.project_id}/files"
+        headers = self._get_headers()
+        params = {"limit": 500}
+        print(f"Request: GET {url} with params {params}")
+        response = requests.get(url, headers=headers, params=params)
+        #print(f"Response: {response.status_code}")
+#         print(f"Response Body: {response.text}")
+        if response.status_code != 200:
+            raise Exception(f"获取项目文件列表失败: {response.status_code}, {response.text}")
+        return response.json()
+
+    def _find_file_id_by_name(self, files_data: dict, file_name: str) -> Optional[int]:
+        """从文件列表中查找指定文件名的 fileId
+
+        Args:
+            files_data: get_project_files 返回的数据
+            file_name: 要查找的文件名
+
+        Returns:
+            int: 文件的 ID，如果未找到则返回 None
+        """
+        if "data" not in files_data:
+            raise Exception("文件列表数据格式错误: 缺少 'data' 字段")
+        for file_item in files_data["data"]:
+            if "data" in file_item and file_item["data"]["name"] == file_name:
+                return file_item["data"]["id"]
+        return None
+
+    def _get_file_download_url(self, file_id: int) -> str:
+        """获取文件下载 URL
+
+        Args:
+            file_id: 文件 ID
+
+        Returns:
+            str: 下载 URL
+        """
+        url = f"{self.base_url}/projects/{self.project_id}/files/{file_id}/download"
+        headers = self._get_headers()
+        print(f"Request: GET {url}")
+        response = requests.get(url, headers=headers)
+        #print(f"Response: {response.status_code}")
+#         print(f"Response Body: {response.text}")
+        if response.status_code != 200:
+            raise Exception(f"获取文件下载 URL 失败: {response.status_code}, {response.text}")
+        data = response.json()
+        if "data" not in data or "url" not in data["data"]:
+            raise Exception(f"下载 URL 数据格式错误: {data}")
+        return data["data"]["url"]
+
+    def _download_file_from_url(self, download_url: str, save_path: str, max_retries: int = 3) -> None:
+        """从 URL 下载文件
+
+        Args:
+            download_url: 文件下载 URL
+            save_path: 保存路径
+            max_retries: 最大重试次数
+        """
+        for attempt in range(max_retries):
+            try:
+#                 print(f"Request: GET {download_url} (Attempt {attempt + 1}/{max_retries})")
+                response = requests.get(download_url, stream=True, timeout=60)
+                #print(f"Response: {response.status_code}")
+                if response.status_code != 200:
+                    raise Exception(f"下载文件失败: {response.status_code}, {response.text}")
+
+                os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else ".", exist_ok=True)
+                with open(save_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                #print(f"文件下载成功: {save_path}")
+                return
+            except (requests.exceptions.ChunkedEncodingError, requests.exceptions.RequestException, Exception) as e:
+                print(f"下载失败 (Attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"等待 {wait_time} 秒后重试...")
+                    time.sleep(wait_time)
+                else:
+                    raise Exception(f"文件下载最终失败，已重试 {max_retries} 次: {e}")
+
+    def download_file(self, target_file_name: str, output_path: str, **kwargs) -> None:
+        """从 Crowdin 下载指定文件
+
+        Args:
+            target_file_name: 目标文件名
+            output_path: 输出文件路径
+            **kwargs: 其他参数（未使用）
+        """
+        print(f"开始从 Crowdin 下载文件: {target_file_name}")
+        # 1. 获取项目文件列表
+        print("正在获取项目文件列表...")
+        files_data = self._get_project_files()
+        # 2. 查找目标文件的 fileId
+        print(f"正在查找文件: {target_file_name}")
+        file_id = self._find_file_id_by_name(files_data, target_file_name)
+        if file_id is None:
+            raise Exception(f"未找到文件: {target_file_name}")
+        print(f"找到文件 ID: {file_id}")
+        # 3. 获取下载 URL
+        print("正在获取下载 URL...")
+        download_url = self._get_file_download_url(file_id)
+        print("下载 URL 获取成功")
+        # 4. 下载文件
+        print("正在下载文件...")
+        self._download_file_from_url(download_url, output_path)
+        print("文件下载完成")
+
+    def update_source_language(self, target_file_name: str, output_path: str, **kwargs) -> None:
+        """从 Crowdin 更新源语言文件
+
+        Args:
+            target_file_name: 目标文件名
+            output_path: 输出文件路径（最终保存位置）
+            **kwargs: 其他参数（未使用）
+        """
+        temp_file = "./APP.xlsx"
+        self.download_file(target_file_name, temp_file, **kwargs)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        shutil.copy(temp_file, output_path)
+        os.remove(temp_file)
+        print(f"源语言文件已更新: {output_path}")
+
+
+# 默认配置（需要设置）
+DEFAULT_ACCESS_TOKEN = "db0506fb755d528c7b9b750e15174d3cfa483859488da978748ad6b9e34d13dc94d8716810a2f978"  # 需要设置
+DEFAULT_PROJECT_ID = "71"  # 需要设置
+DEFAULT_TARGET_FILE_NAME = "APP.xlsx"
+
+
+############################
 
 if __name__ == '__main__':
     localizable_path = sys.argv[1]
-    DownLatestLocalizableSource(localizable_path)
+    crowdin = sys.argv[2]
+    if crowdin:
+        platform = CrowdinPlatform(DEFAULT_ACCESS_TOKEN, DEFAULT_PROJECT_ID)
+        target_path = f"{localizable_path}/APP/APP.xlsx"
+        platform.update_source_language(DEFAULT_TARGET_FILE_NAME, target_path)
+    else:
+        DownLatestLocalizableSource(localizable_path)

@@ -23,6 +23,7 @@ class File_util
         zh_cn_col = first_row.cells.index { |c| c && c.value == 'zh-CN' }
 
         if zh_cn_col
+          puts "正在删除zh-CN列的译文...".red
           worksheet.each do |row|
             row&.cells&.delete_at(zh_cn_col)
           end
@@ -31,6 +32,7 @@ class File_util
         last_col_index = worksheet[0].cells.size # 当前最后一列索引+1
 
         # 遍历 B 列（索引 1）所有行
+        puts "正在将Source列的文案复制到zh-CN列，请稍等...".yellow
         worksheet.each_with_index do |row, row_index|
           b_value = row && row[1] ? row[1].value : nil
           worksheet.add_cell(row_index, last_col_index, b_value)
@@ -38,6 +40,7 @@ class File_util
 
         worksheet[0].cells[last_col_index] = worksheet.add_cell(0, last_col_index, 'zh-CN')
         workbook.write(filename)
+        puts "已成功将Source文案作为zh-CN语言的译文".green
       end
 
       row1 = worksheet[0]

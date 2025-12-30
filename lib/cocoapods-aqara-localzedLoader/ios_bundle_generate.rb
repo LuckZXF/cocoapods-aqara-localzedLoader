@@ -63,11 +63,7 @@ class BundleGenerater
       sleep sleep_time
     end
     puts "当前进行第#{@@download_Count}次尝试下载多语言文件"
-    if crowdin
-      system "crowdin download sources"
-    else
-      system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path}"
-    end
+    system "cd #{File.dirname(__FILE__)};python3 DownloadNewLanguage.py #{project_path} #{crowdin}"
     @@download_Count = @@download_Count + 1
   end
 
