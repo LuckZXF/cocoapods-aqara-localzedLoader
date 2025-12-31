@@ -309,9 +309,15 @@ DEFAULT_TARGET_FILE_NAME = "APP.xlsx"
 
 ############################
 
+def str_to_bool(v: str) -> bool:
+    return v.lower() in ("1", "true", "yes", "y", "on")
+
 if __name__ == '__main__':
     localizable_path = sys.argv[1]
-    crowdin = sys.argv[2]
+    crowdin = False
+    if len(sys.argv) > 2:
+        crowdin = str_to_bool(sys.argv[2])
+
     if crowdin:
         platform = CrowdinPlatform(DEFAULT_ACCESS_TOKEN, DEFAULT_PROJECT_ID)
         target_path = f"{localizable_path}/APP/APP.xlsx"
