@@ -115,7 +115,7 @@ class BundleGenerater
       expected_count = nil
       stringElement.langHash.each do |lang, value|
         # puts "#{lang}:#{value}"
-        next if lang.downcase === "selfkey" or value === nil or value === " " or value === ""
+        next if lang.downcase === "selfkey" or lang.downcase === "context" or value === nil or value === " " or value === ""
         value = self.handleValue value,stringElement
         current_count = value.scan(/%@/).size
 
