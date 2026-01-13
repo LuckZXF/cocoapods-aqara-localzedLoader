@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require_relative './LanguageDownloader'
 require_relative  './File_util'
+require_relative './crowdin_util'
 require 'fileutils'
 require 'open3'
 # require 'colored2'
@@ -90,7 +91,7 @@ class BundleGenerater
     if File.exist? f_path
       if crowdin
         parent_dir = File.dirname(f_path)
-        FileUtils.rm_rf(parent_dir)
+        # FileUtils.rm_rf(parent_dir)
       else
         FileUtils.rm_rf f_path
       end
@@ -115,7 +116,7 @@ class BundleGenerater
       expected_count = nil
       stringElement.langHash.each do |lang, value|
         # puts "#{lang}:#{value}"
-        next if lang.downcase === "selfkey" or lang.downcase === "context" or value === nil or value === " " or value === ""
+        next if lang.downcase === "selfkey" or lang.downcase === "context" or lang.downcase === "tag" or lang.downcase === "length limit" or value === nil or value === " " or value === ""
         value = self.handleValue value,stringElement
         current_count = value.scan(/%@/).size
 
@@ -227,7 +228,9 @@ class BundleGenerater
       puts "InfoPlist多语言拷贝到目录:#{info_plist_path}"
     end
     if crowdin
-      system("crowdin upload --config #{project_path}/AqaraHome/Common/crowdin.yml --branch iOS_Localizable")
+      system("crowdin upload translations --config #{project_path}/AqaraHome/Common/crowdin.yml --branch iOS_Localizable")
+      crowdin_util = CrowdinUtil.new
+      crowdin_util.release_distribution
     end
   end
   #对多语言的value进行处理

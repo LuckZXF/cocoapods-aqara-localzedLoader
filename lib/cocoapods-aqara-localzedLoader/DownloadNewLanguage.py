@@ -177,6 +177,20 @@ class CrowdinPlatform():
         resp.raise_for_status()
         return resp.json()
 
+    def release_distribution(self, distribution_hash: str = "e-53615346e6d639beb7263b3iht") -> None:
+        """
+        OTA 发布（真正让移动端拿到新文案）
+        """
+        url = f"{self.base_url}/projects/{self.project_id}/distributions/{distribution_hash}/release"
+        print(f"🚀 OTA Release: distribution={distribution_hash}")
+
+        resp = requests.post(url, headers=self._get_headers(), json={})
+        resp.raise_for_status()
+
+        print("✅ OTA Release 成功")
+
+
+
     def _find_directory_id_by_path(self, directory_path: str) -> int:
         dirs = self._get_directories()
         for item in dirs["data"]:
@@ -240,6 +254,7 @@ class CrowdinPlatform():
                 if chunk:
                     f.write(chunk)
         print(f"多语言 ZIP 下载完成: {output_zip_path}")
+        # 创建 Release
 
     def download_and_extract_translations(self, output_dir: str) -> None:
         """下载并解压整个多语言文件"""
