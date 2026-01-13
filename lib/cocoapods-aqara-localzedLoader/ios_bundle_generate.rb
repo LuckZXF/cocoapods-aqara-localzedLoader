@@ -91,7 +91,7 @@ class BundleGenerater
     if File.exist? f_path
       if crowdin
         parent_dir = File.dirname(f_path)
-        # FileUtils.rm_rf(parent_dir)
+        FileUtils.rm_rf(parent_dir)
       else
         FileUtils.rm_rf f_path
       end
