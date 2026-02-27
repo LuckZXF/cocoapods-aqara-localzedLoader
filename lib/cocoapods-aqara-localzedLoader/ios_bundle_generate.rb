@@ -228,9 +228,11 @@ class BundleGenerater
       puts "InfoPlist多语言拷贝到目录:#{info_plist_path}"
     end
     if crowdin
-      system("crowdin upload translations --config #{project_path}/AqaraHome/Common/crowdin.yml --branch iOS_Localizable")
-      crowdin_util = CrowdinUtil.new
-      crowdin_util.release_distribution
+      thread = Thread.new do
+        system("crowdin upload translations --config #{project_path}/AqaraHome/Common/crowdin.yml --branch iOS_Localizable")
+        crowdin_util = CrowdinUtil.new
+        crowdin_util.release_distribution
+      end
     end
   end
   #对多语言的value进行处理
