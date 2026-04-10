@@ -10,6 +10,10 @@ class BundleGenerater
     "crowdin_life.yml" => "85",
     "crowdin.yml" => "71"
   }.freeze
+  PROJECT_APP_DIRS = {
+    "85" => "AqaraLife",
+    "71" => "AqaraHome"
+  }.freeze
 
 
   # INFO_PLIST_ARRAY = [NSAppleMusicUsageDescription","NSLocalNetworkUsageDescription"]
@@ -57,11 +61,16 @@ class BundleGenerater
 
   @@download_Count = 1
 
+  def self.app_dir_name(project_id)
+    PROJECT_APP_DIRS.fetch(project_id, "AqaraHome")
+  end
+
   def self.resolve_crowdin_project(project_path)
     CROWDIN_PROJECTS.each do |config_name, project_id|
+      app_dir = self.app_dir_name(project_id)
       [
         "#{project_path}/#{config_name}",
-        "#{project_path}/AqaraHome/Common/#{config_name}"
+        "#{project_path}/#{app_dir}/Common/#{config_name}"
       ].each do |config_path|
         next unless File.exist?(config_path)
 
@@ -103,6 +112,7 @@ class BundleGenerater
 
     crowdin_info = self.resolve_crowdin_project(project_path)
     crowdin = crowdin_info[:enabled]
+    app_dir = self.app_dir_name(crowdin_info[:project_id])
 
     f_path = "#{project_path}/download.xlsx"
     if crowdin
@@ -221,7 +231,7 @@ class BundleGenerater
     #拷贝到代码仓库里
     #查找bundle路径
     bundPath = ""
-    info_plist_path = "./AqaraHome/Resource"
+    info_plist_path = "./#{app_dir}/Resource"
     require 'find'
     Find.find("./") do |filePath|
       if  filePath.end_with?("LMFramework.bundle")
@@ -238,7 +248,7 @@ class BundleGenerater
     file_til.getLangList.each do |lang|
       path = "./#{lang}.lproj/Localizable.strings"
       dest = bundPath + "/#{lang}.lproj"
-      dest2 = "./AqaraHome/Resource/#{lang}.lproj"
+      dest2 = "./#{app_dir}/Resource/#{lang}.lproj"
       FileUtils.mkdir_p dest
       FileUtils.cp(path,dest2)
       FileUtils.mv("#{path}",dest,force:true)
@@ -247,7 +257,7 @@ class BundleGenerater
       # puts "path::::::#{info_plist_file}"
       if File.exist? info_plist_file
         copy_info_plist = true
-        dest = "./AqaraHome/Resource/#{lang}.lproj"
+        dest = "./#{app_dir}/Resource/#{lang}.lproj"
         FileUtils.mkdir_p dest
         FileUtils.mv("#{info_plist_file}",dest,force:true)
       end
