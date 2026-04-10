@@ -6,6 +6,11 @@ require 'fileutils'
 require 'open3'
 # require 'colored2'
 class BundleGenerater
+  CROWDIN_PROJECTS = {
+    "crowdin_life.yml" => "85",
+    "crowdin.yml" => "71"
+  }.freeze
+
 
   # INFO_PLIST_ARRAY = [NSAppleMusicUsageDescription","NSLocalNetworkUsageDescription"]
   INFO_PLIST_MAP = {
@@ -52,6 +57,29 @@ class BundleGenerater
 
   @@download_Count = 1
 
+  def self.resolve_crowdin_project(project_path)
+    CROWDIN_PROJECTS.each do |config_name, project_id|
+      [
+        "#{project_path}/#{config_name}",
+        "#{project_path}/AqaraHome/Common/#{config_name}"
+      ].each do |config_path|
+        next unless File.exist?(config_path)
+
+        return {
+          enabled: true,
+          config_path: config_path,
+          project_id: project_id
+        }
+      end
+    end
+
+    {
+      enabled: false,
+      config_path: nil,
+      project_id: nil
+    }
+  end
+
   def self.downloadxls(project_path, crowdin=false)
     if @@download_Count > 10
       puts "当前无网络，程序即将退出。"
@@ -73,10 +101,12 @@ class BundleGenerater
     # 下载excel
     puts "开始下载多语言文件...".green
 
-    crowdin = true if File.exist? "#{project_path}/crowdin.yml"
+    crowdin_info = self.resolve_crowdin_project(project_path)
+    crowdin = crowdin_info[:enabled]
 
     f_path = "#{project_path}/download.xlsx"
     if crowdin
+      puts "检测到 Crowdin 配置: #{crowdin_info[:config_path]}，project_id=#{crowdin_info[:project_id]}"
       f_path = "#{project_path}/APP/APP.xlsx"
     end
 
@@ -227,11 +257,18 @@ class BundleGenerater
     if copy_info_plist
       puts "InfoPlist多语言拷贝到目录:#{info_plist_path}"
     end
-    if crowdin
-      thread = Thread.new do
-        system("crowdin upload translations --config #{project_path}/AqaraHome/Common/crowdin.yml --branch iOS_Localizable")
-        crowdin_util = CrowdinUtil.new
-        crowdin_util.release_distribution
+    if crowdin && crowdin_info[:project_id] == "71"
+      Thread.new do
+        pid = Process.spawn(
+          "crowdin upload translations --config #{crowdin_info[:config_path]} --branch iOS_Localizable"
+        )
+
+        Process.wait(pid)
+
+        if $?.success?
+          crowdin_util = CrowdinUtil.new(crowdin_info[:project_id])
+          crowdin_util.release_distribution
+        end
       end
     end
   end

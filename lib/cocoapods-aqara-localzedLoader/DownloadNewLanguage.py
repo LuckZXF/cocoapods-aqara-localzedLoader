@@ -3,7 +3,9 @@ import os, sys, stat
 import time
 import requests
 import zipfile
+import csv
 from typing import Optional
+from openpyxl import Workbook
 
 
 #########  火山多语言  #############
@@ -264,12 +266,116 @@ class CrowdinPlatform():
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(output_dir)
         os.remove(zip_path)
+
+        if self.project_id == DEFAULT_LIFE_PROJECT_ID:
+            csv_path = find_life_csv_file(output_dir)
+            if not csv_path:
+                raise FileNotFoundError(f"未找到 Life 项目的 CSV 文件: {output_dir}")
+
+            xlsx_path = os.path.join(output_dir, DEFAULT_TARGET_FILE_NAME)
+            convert_csv_to_xlsx(csv_path, xlsx_path)
+
         print(f"多语言文件已解压到: {output_dir}APP.xlsx")
 
 # 默认配置（需要设置）
 DEFAULT_ACCESS_TOKEN = "db0506fb755d528c7b9b750e15174d3cfa483859488da978748ad6b9e34d13dc94d8716810a2f978"  # 需要设置
-DEFAULT_PROJECT_ID = "71"  # 需要设置
+DEFAULT_LEGACY_PROJECT_ID = "71"
+DEFAULT_LIFE_PROJECT_ID = "85"
 DEFAULT_TARGET_FILE_NAME = "APP.xlsx"
+
+CROWDIN_PROJECTS = (
+    ("crowdin_life.yml", DEFAULT_LIFE_PROJECT_ID),
+    ("crowdin.yml", DEFAULT_LEGACY_PROJECT_ID),
+)
+
+
+def resolve_crowdin_project(localizable_path: str) -> tuple[Optional[str], Optional[str]]:
+    for config_name, project_id in CROWDIN_PROJECTS:
+        candidate_paths = (
+            os.path.join(localizable_path, config_name),
+            os.path.join(localizable_path, "AqaraHome", "Common", config_name),
+        )
+        for config_path in candidate_paths:
+            if os.path.exists(config_path):
+                return config_path, project_id
+    return None, None
+
+
+def find_life_csv_file(output_dir: str) -> Optional[str]:
+    preferred_path = os.path.join(output_dir, "APP_Life_APP.csv")
+    if os.path.exists(preferred_path):
+        return preferred_path
+
+    fallback_csv_paths = []
+    for root, _, file_names in os.walk(output_dir):
+        for file_name in sorted(file_names):
+            file_path = os.path.join(root, file_name)
+            if file_name == "APP_Life_APP.csv":
+                return file_path
+            if file_name.lower().endswith(".csv"):
+                fallback_csv_paths.append(file_path)
+
+    if fallback_csv_paths:
+        return fallback_csv_paths[0]
+    return None
+
+
+def convert_csv_to_xlsx(csv_path: str, xlsx_path: str) -> None:
+    with open(csv_path, "r", encoding="utf-8-sig", newline="") as csv_file:
+        sample = csv_file.read(4096)
+        csv_file.seek(0)
+
+        try:
+            dialect = csv.Sniffer().sniff(sample)
+        except csv.Error:
+            dialect = csv.excel
+
+        reader = csv.reader(csv_file, dialect)
+        workbook = Workbook()
+        worksheet = workbook.active
+
+        rows = list(reader)
+        if not rows:
+            workbook.save(xlsx_path)
+            print(f"已将空 CSV 转换为 Excel: {xlsx_path}")
+            return
+
+        # 统一成旧项目 APP.xlsx 的列结构：
+        # keys | source | tag | length limit | context | en-US | ...
+        normalized_rows = []
+        for row_index, row in enumerate(rows):
+            normalized_row = []
+            keys_value = row[0] if len(row) > 0 else ""
+            source_value = row[1] if len(row) > 1 else ""
+            context_value = row[2] if len(row) > 2 else ""
+            remaining_values = list(row[3:]) if len(row) > 3 else []
+
+            if row_index == 0:
+                normalized_row = [
+                    "keys",
+                    "source",
+                    "tag",
+                    "length limit",
+                    "context",
+                    "en-US",
+                ]
+                normalized_row.extend(remaining_values[1:])
+            else:
+                normalized_row = [
+                    keys_value,
+                    source_value,
+                    "",
+                    "",
+                    context_value,
+                ]
+                normalized_row.extend(remaining_values)
+            normalized_rows.append(normalized_row)
+
+        for row in normalized_rows:
+            worksheet.append(row)
+
+        workbook.save(xlsx_path)
+        print(f"已将 CSV 转换为 Excel: {xlsx_path}")
 
 
 ############################
@@ -284,7 +390,12 @@ if __name__ == '__main__':
         crowdin = str_to_bool(sys.argv[2])
 
     if crowdin:
-        platform = CrowdinPlatform(DEFAULT_ACCESS_TOKEN, DEFAULT_PROJECT_ID)
+        config_path, project_id = resolve_crowdin_project(localizable_path)
+        if not config_path or not project_id:
+            raise FileNotFoundError("未找到 crowdin.yml 或 crowdin_life.yml，无法确定 Crowdin project_id")
+
+        print(f"检测到 Crowdin 配置: {config_path}，project_id={project_id}")
+        platform = CrowdinPlatform(DEFAULT_ACCESS_TOKEN, project_id)
         target_path = f"{localizable_path}/APP/"
         platform.download_and_extract_translations(target_path)
     else:

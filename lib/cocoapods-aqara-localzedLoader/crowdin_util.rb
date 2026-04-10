@@ -4,6 +4,10 @@ require "uri"
 require "json"
 class CrowdinUtil
 
+  def initialize(project_id = "71")
+    @project_id = project_id
+  end
+
   def crowdin_headers
     {
       "Authorization" => "Bearer db0506fb755d528c7b9b750e15174d3cfa483859488da978748ad6b9e34d13dc94d8716810a2f978",
@@ -13,7 +17,7 @@ class CrowdinUtil
 
   def release_distribution(distribution_hash = "e-53615346e6d639beb7263b3iht")
     url = URI(
-      "https://aqara.crowdin.com/api/v2/projects/71/distributions/#{distribution_hash}/release"
+      "https://aqara.crowdin.com/api/v2/projects/#{@project_id}/distributions/#{distribution_hash}/release"
     )
 
     puts "🚀 OTA Release: distribution=#{distribution_hash}"
